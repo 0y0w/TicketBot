@@ -74,6 +74,8 @@ namespace TicketBot
 
             _ui.btnStart.Enabled = true;
             _ui.btnStop.Enabled = false;
+
+            _ui.cmbPlatform.Enabled = true;
         }
 
         public async Task btnStart_Click()
@@ -86,6 +88,8 @@ namespace TicketBot
             _ui.Log("🚀 啟動程式...");
             _ui.btnStart.Enabled = false;
             _ui.btnStop.Enabled = true;
+
+            _ui.cmbPlatform.Enabled = false;
 
             await RunBot();
         }
