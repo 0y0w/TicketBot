@@ -75,18 +75,7 @@ namespace TicketBot
             _ui.btnStart.Enabled = true;
             _ui.btnStop.Enabled = false;
 
-            try
-            {
-                _pauseSemaphore.Release();
-            }
-            catch (SemaphoreFullException)
-            {
-
-            }
-            catch (ObjectDisposedException)
-            {
-
-            }
+            _ui.cmbPlatform.Enabled = true;
         }
 
         public async Task btnStart_Click()
@@ -100,6 +89,8 @@ namespace TicketBot
             _ui.Log("🚀 啟動程式...");
             _ui.btnStart.Enabled = false;
             _ui.btnStop.Enabled = true;
+
+            _ui.cmbPlatform.Enabled = false;
 
             _isLoggedIn = false;
 
@@ -191,6 +182,12 @@ namespace TicketBot
         private async Task StartBooking()
         {
             if (!_isRunning) return;
+
+            if (!_isPaused)
+            {
+                await _pauseSemaphore.WaitAsync();
+                _isPaused = true;
+            }
 
             while (_isRunning && _isLoggedIn)
             {
