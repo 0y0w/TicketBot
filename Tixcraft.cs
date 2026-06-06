@@ -90,6 +90,8 @@ namespace TicketBot
             _ui.btnStop.Enabled = true;
             _ui.cmbPlatform.Enabled = false;
 
+            _ui.cmbPlatform.Enabled = false;
+
             await RunBot();
         }
 
