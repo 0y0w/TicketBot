@@ -75,18 +75,7 @@ namespace TicketBot
             _ui.btnStart.Enabled = true;
             _ui.btnStop.Enabled = false;
 
-            try
-            {
-                _pauseSemaphore.Release();
-            }
-            catch (SemaphoreFullException)
-            {
-
-            }
-            catch (ObjectDisposedException)
-            {
-
-            }
+            _ui.cmbPlatform.Enabled = true;
         }
 
         public async Task btnStart_Click()
@@ -100,6 +89,8 @@ namespace TicketBot
             _ui.Log("🚀 啟動程式...");
             _ui.btnStart.Enabled = false;
             _ui.btnStop.Enabled = true;
+
+            _ui.cmbPlatform.Enabled = false;
 
             _isLoggedIn = false;
 
@@ -139,7 +130,7 @@ namespace TicketBot
             {
 
             }
-            
+
             await LoginFlow();
         }
 
@@ -148,7 +139,7 @@ namespace TicketBot
             if (!_isRunning) return;
 
             _ui.Log("正在前往登入...");
-            try 
+            try
             {
                 string activityId = _ui.txtActivityId.Text;
 
@@ -179,8 +170,8 @@ namespace TicketBot
                         _isLoggedIn = true;
                     }
                 }
-                catch 
-                { 
+                catch
+                {
 
                 }
             }
@@ -191,6 +182,12 @@ namespace TicketBot
         private async Task StartBooking()
         {
             if (!_isRunning) return;
+
+            if (!_isPaused)
+            {
+                await _pauseSemaphore.WaitAsync();
+                _isPaused = true;
+            }
 
             while (_isRunning && _isLoggedIn)
             {
@@ -218,7 +215,7 @@ namespace TicketBot
                     else if (url.Contains("register_intents/new") || url.Contains("registrations/new"))
                     {
                         await HandleAreaSelection();
-                    }                    
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -238,23 +235,22 @@ namespace TicketBot
                 if (areaItems == null || areaItems.Length == 0)
                 {
                     _ui.Log("🔎 搜尋不到區域，執行重整...");
-                    await _page.ReloadAsync();
+                    await Task.Delay(500);
                     return;
                 }
 
                 var quantity = _ui.txtQuantity.Text != "" ? _ui.txtQuantity.Text : "1";
                 IElementHandle plusBtn = null;
-                string selectedName = "";
+                string selectedName = null;
 
                 foreach (var li in areaItems)
                 {
                     var text = await li.EvaluateFunctionAsync<string>(@"el => {
-                    // 抓取名稱，並移除不必要的換行與多餘空白
                         const name = el.querySelector('.ticket-name').innerText.split('\n')[0].trim();
     
-                        // 抓取價格，只選取價格文字，過濾掉 mobile-fee 的手續費文字
                         const priceEl = el.querySelector('.ticket-price span.ng-binding');
-                        const price = priceEl ? priceEl.innerText.split('\n')[0].trim() : '0';
+                        const priceC = priceEl ? priceEl.innerText.split('\n')[0].trim() : '0';
+                        const price = priceC.replace(/,/g, '');
     
                         return name + ' | ' + price;
                     }");
@@ -279,7 +275,7 @@ namespace TicketBot
                     for (int i = 0; i < Convert.ToInt32(quantity); i++)
                     {
                         await plusBtn.ClickAsync();
-                        await Task.Delay(100); 
+                        await Task.Delay(100);
                     }
 
                     var agree = await _page.QuerySelectorAsync("#person_agree_terms");
